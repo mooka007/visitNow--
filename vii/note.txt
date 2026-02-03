@@ -1,0 +1,391 @@
+tour + boats
+
+for the car : 
+{
+  "service_id": 22,
+  "service_type": "car",
+  "start_date": "2026-02-01",
+  "end_date": "2026-02-05",
+  "start_time": "10:00",
+  "return_date": "2026-02-05",
+  "return_time": "18:00",
+  "adults": 2,
+  "number" : 2,
+  "children": 1,
+  "extra_price": []
+}
+{
+    "url": "https://visitmorocconow.net/api/booking/59c206e3a7bac8e9b2fb81736fc39fc8/checkout",
+    "booking_code": "59c206e3a7bac8e9b2fb81736fc39fc8",
+    "status": 1,
+    "message": ""
+}
+
+// Hotel 
+{
+  "service_id": 1,
+  "service_type": "hotel",
+  "start_date": "2026-02-01",
+  "end_date": "2026-02-05",
+  "adults": 2,
+  "children": 1,
+  "rooms": [
+    {
+      "id": 1,
+      "number_selected": 1
+    }
+  ],
+  "extra_price": []
+}
+{
+    "url": "https://visitmorocconow.net/api/booking/d75a34963d712edc74eff349c1cc0a5a/checkout",
+    "booking_code": "d75a34963d712edc74eff349c1cc0a5a",
+    "status": 1,
+    "message": ""
+}
+
+// Event 
+{
+  "service_id": 5,
+  "service_type": "event",
+  "start_date": "2026-02-15",
+  "ticket_types": {
+    "0": {
+      "number": 2
+    }
+  },
+  "extra_price": []
+}
+{
+    "url": "https://visitmorocconow.net/api/booking/938003e2f25a6dcea06ede64eedda54a/checkout",
+    "booking_code": "938003e2f25a6dcea06ede64eedda54a",
+    "status": 1,
+    "message": ""
+}
+
+// Space 
+{
+  "service_id": 4,
+  "service_type": "space",
+  "start_date": "2026-02-01",
+  "end_date": "2026-02-05",
+  "adults": 2,
+  "children": 1,
+  "extra_price": []
+}
+
+{
+    "url": "https://visitmorocconow.net/api/booking/4d073ea286b59586f08530fa945cddb9/checkout",
+    "booking_code": "4d073ea286b59586f08530fa945cddb9",
+    "status": 1,
+    "message": ""
+}
+
+
+
+
+📋 COMPREHENSIVE TODO LIST
+
+🏗️ PHASE 1: FOUNDATION & CONFIGURATION
+app/_layout.tsx - Root layout with navigation setup
+app/(services)/_layout.tsx - Tab navigation for 6 services
+app/(services)/index.tsx - Home/Dashboard screen
+package.json - Install required dependencies (lucide-react-native)
+src/constants/colors.ts - Moroccan color palette
+src/constants/services.ts - Service definitions (6 services)
+global.css / CSS setup - Global styles
+tsconfig.json - Path aliases configuration
+
+🏨 PHASE 2: SERVICE SCREENS (6 Services)
+app/(services)/hotels.tsx - Hotel listings & booking
+app/(services)/tours.tsx - Tour packages & experiences
+app/(services)/cars.tsx - Car rentals
+app/(services)/events.tsx - Events & tickets
+app/(services)/flights.tsx - Flight bookings
+app/(services)/spaces.tsx - Space/venue rentals
+
+🔍 PHASE 3: SEARCH & BOOKING FLOW
+app/search/index.tsx - Main search interface
+app/search/results.tsx - Search results display
+app/search/filters.tsx - Filtering modal
+app/hotel/[id].tsx - Hotel details page
+app/tour/[id].tsx - Tour details page
+app/car/[id].tsx - Car details page
+app/booking/[id].tsx - Booking form
+app/booking/confirmation.tsx - Booking confirmation
+
+👤 PHASE 4: AUTHENTICATION & PROFILE
+app/(auth)/_layout.tsx - Auth navigation layout
+app/(auth)/login.tsx - Login screen
+app/(auth)/register.tsx - Registration screen
+app/profile/index.tsx - User profile
+app/profile/bookings.tsx - User bookings list
+app/profile/favorites.tsx - Saved item
+
+🎨 PHASE 5: UI COMPONENTS (src/components/)
+UI Components
+src/components/ui/buttons/PrimaryButton.tsx
+src/components/ui/buttons/OutlineButton.tsx
+src/components/ui/inputs/SearchInput.tsx
+src/components/ui/inputs/DateRangePicker.tsx
+src/components/ui/cards/HotelCard.tsx
+src/components/ui/cards/TourCard.tsx
+src/components/ui/cards/CarCard.tsx
+src/components/ui/layout/ServiceGrid.tsx
+
+Domain Components
+src/components/domain/hotel/HotelGallery.tsx
+src/components/domain/tour/TourItinerary.tsx
+src/components/domain/car/CarFeatures.tsx
+src/components/shared/SearchHeader.tsx
+src/components/shared/BookingStepper.tsx
+
+⚙️ PHASE 6: CORE LOGIC & UTILITIES
+src/contexts/AuthContext.tsx - Authentication state
+src/contexts/SearchContext.tsx - Search state
+src/contexts/BookingContext.tsx - Booking state
+src/hooks/useSearch.ts - Search functionality hook
+src/hooks/useBooking.ts - Booking functionality hook
+src/types/services.types.ts - TypeScript definitions
+src/utils/formatters/priceFormatter.ts - Price formatting
+src/utils/formatters/dateFormatter.ts - Date formatting
+src/api/client.ts - API client setup
+src/api/mock/hotels.data.ts - Mock hotel data
+src/api/mock/tours.data.ts - Mock tour data
+
+📱 PHASE 7: ADVANCED FEATURES
+app/+not-found.tsx - Custom 404 page
+app/+html.tsx - Web wrapper
+app/_sitemap.tsx - Sitemap generation
+Responsive design for tablets
+Dark mode implementation
+Localization (English/French/Arabic)
+Offline support
+Push notifications
+
+
+palette : #c22b24
+          #13357b
+visitmorocco-app/
+├── 📁 app/                           # Expo Router v3 (File-based navigation)
+│   ├── _layout.tsx                   # Root layout with providers
+│   ├── +not-found.tsx                # 404 page
+│   ├── +html.tsx                     # Web wrapper
+│   ├── 📁 (auth)/                    # Authentication
+│   │   ├── _layout.tsx
+│   │   ├── login.tsx
+│   │   ├── register.tsx
+│   │   └── forgot-password.tsx
+│   ├── 📁 (services)/                # MAIN SERVICE TABS (6 services)
+│   │   ├── _layout.tsx               # Tab navigator for services
+│   │   ├── index.tsx                 # Dashboard/Home (overview)
+│   │   ├── hotels.tsx  /              # 🏨 Hotel bookings
+│   │   ├── spaces.tsx   /             # 🏢 Space/venue rentals
+│   │   ├── tours.tsx   /              # 🗺️ Tour packages
+│   │   ├── cars.tsx   /               # 🚗 Car rentals
+│   │   ├── events.tsx                # 🎭 Events & tickets
+│   │   └── flights.tsx               # ✈️ Flight bookings
+│   ├── 📁 search/                    # Unified search
+│   │   ├── index.tsx                 # Main search with filters
+│   │   ├── results.tsx               # Search results listing
+│   │   └── filters.tsx               # Advanced filters modal
+│   ├── 📁 hotel/                     # Hotel-specific flows
+│   │   ├── [id].tsx                  # Hotel details
+│   │   ├── booking.tsx               # Hotel booking form
+│   │   └── confirmation.tsx
+│   ├── 📁 tour/                      # Tour-specific flows
+│   │   ├── [id].tsx
+│   │   ├── booking.tsx
+│   │   └── confirmation.tsx
+│   ├── 📁 car/                       # Car rental flows
+│   │   ├── [id].tsx
+│   │   ├── rental.tsx
+│   │   └── confirmation.tsx
+│   ├── 📁 booking/                   # Booking management
+│   │   ├── [id].tsx                  # Booking details
+│   │   ├── manage.tsx                # Modify booking
+│   │   └── cancel.tsx
+│   ├── 📁 profile/                   # User profile (outside tabs)
+│   │   ├── index.tsx
+│   │   ├── bookings.tsx              # All user bookings
+│   │   ├── favorites.tsx
+│   │   └── settings.tsx
+│   └── _sitemap.tsx
+
+
+/////////////////////////////////
+
+├── 📁 src/
+│   ├── 📁 api/                       # API Layer
+│   │   ├── client.ts                 # Axios instance
+│   │   ├── 📁 endpoints/             # Service-specific APIs
+│   │   │   ├── hotels.api.ts
+│   │   │   ├── tours.api.ts
+│   │   │   ├── cars.api.ts
+│   │   │   ├── flights.api.ts
+│   │   │   ├── spaces.api.ts
+│   │   │   └── events.api.ts
+│   │   └── 📁 mock/                  # Development mock data
+│   │       ├── hotels.data.ts
+│   │       ├── tours.data.ts
+│   │       └── cars.data.ts
+│   ├── 📁 components/                # UI Components
+│   │   ├── 📁 ui/                    # Base components
+│   │   │   ├── buttons/
+│   │   │   │   ├── PrimaryButton.tsx
+│   │   │   │   ├── OutlineButton.tsx
+│   │   │   │   └── IconButton.tsx
+│   │   │   ├── inputs/
+│   │   │   │   ├── SearchInput.tsx   # Main search component
+│   │   │   │   ├── DateRangePicker.tsx
+│   │   │   │   ├── GuestSelector.tsx
+│   │   │   │   └── LocationInput.tsx
+│   │   │   ├── cards/
+│   │   │   │   ├── HotelCard.tsx
+│   │   │   │   ├── TourCard.tsx
+│   │   │   │   ├── CarCard.tsx
+│   │   │   │   └── FlightCard.tsx
+│   │   │   └── layout/
+│   │   │       ├── ServiceGrid.tsx   # 6-service grid for homepage
+│   │   │       └── FilterSidebar.tsx
+│   │   ├── 📁 domain/                # Service-specific components
+│   │   │   ├── hotel/
+│   │   │   │   ├── HotelGallery.tsx
+│   │   │   │   ├── RoomSelector.tsx
+│   │   │   │   └── AmenitiesList.tsx
+│   │   │   ├── tour/
+│   │   │   │   ├── TourItinerary.tsx
+│   │   │   │   └── GuideCard.tsx
+│   │   │   ├── car/
+│   │   │   │   ├── CarFeatures.tsx
+│   │   │   │   └── RentalCalculator.tsx
+│   │   │   └── flight/
+│   │   │       ├── FlightRoute.tsx
+│   │   │       └── SeatSelector.tsx
+│   │   └── 📁 shared/
+│   │       ├── SearchHeader.tsx      # Reusable search bar
+│   │       ├── BookingStepper.tsx
+│   │       └── PriceBreakdown.tsx
+│   ├── 📁 constants/                 # App Constants
+│   │   ├── services.ts               # 6 service definitions
+│   │   ├── colors.ts                 # Moroccan theme
+│   │   ├── cities.ts                 # Moroccan cities
+│   │   └── mockData.ts               # Initial mock data
+│   ├── 📁 contexts/                  # Context Providers
+│   │   ├── SearchContext.tsx         # Global search state
+│   │   ├── BookingContext.tsx        # Active booking state
+│   │   └── AuthContext.tsx
+│   ├── 📁 features/                  # Feature Modules
+│   │   ├── 📁 search/
+│   │   │   ├── hooks/
+│   │   │   │   ├── useSearch.ts
+│   │   │   │   └── useSearchFilters.ts
+│   │   │   ├── components/
+│   │   │   └── utils/
+│   │   ├── 📁 booking/
+│   │   │   ├── hooks/
+│   │   │   │   ├── useBooking.ts
+│   │   │   │   └── useAvailability.ts
+│   │   │   └── components/
+│   │   └── 📁 hotel/
+│   ├── 📁 hooks/                     # Global Hooks
+│   │   ├── useSearchNavigation.ts
+│   │   ├── useServiceFilter.ts
+│   │   └── useLocation.ts
+│   ├── 📁 types/                     # TypeScript Definitions
+│   │   ├── services.types.ts         # Types for all 6 services
+│   │   ├── booking.types.ts
+│   │   ├── search.types.ts
+│   │   └── index.ts
+│   ├── 📁 utils/                     # Utilities
+│   │   ├── formatters/
+│   │   │   ├── priceFormatter.ts     # MAD/EUR/USD formatting
+│   │   │   ├── dateFormatter.ts
+│   │   │   └── durationFormatter.ts
+│   │   ├── validators/
+│   │   │   ├── bookingValidator.ts
+│   │   │   └── searchValidator.ts
+│   │   └── helpers/
+│   │       ├── serviceMapper.ts      # Maps service types
+│   │       └── urlBuilder.ts
+│   ├── 📁 navigation/                # Navigation config
+│   │   └── linking.config.ts         # Deep linking
+│   └── 📁 store/                     # State Management
+│       ├── search.store.ts           # Global search state
+│       ├── booking.store.ts          # Booking cart
+│       └── index.ts
+
+///////////////////////////////////////////////////
+
+
+app/ (Expo Router - integrate with your layout.tsx)
+layout.tsx - Root providers + theme.
++not-found.tsx - 404 screen.
+
+app/(tabs)/_layout.tsx - Bottom tab navigator.
+app/(tabs)/home.tsx - HomeScreen with carousel.
+app/(tabs)/tours.tsx - ToursListScreen.
+app/(tabs)/cars.tsx - CarSearchScreen.
+app/(tabs)/profile.tsx - ProfileScreen.
+
+src/components/ (expand your existing)
+
+Button.tsx - Reusable CTA.
+HeroCarousel.tsx - Image slider for destinations.
+TourCard.tsx - Tour preview card.
+CarCard.tsx - Car listing.
+SearchInput.tsx - Location/date search.
+
+src/services/
+api.ts - Axios instance + endpoints (/tours, /cars).
+auth.ts - Login/register hooks.
+storage.ts - AsyncStorage wrappers.
+
+src/hooks/
+useTours.ts - Fetch/filter tours (React Query).
+useCars.ts - Car search.
+useAuth.ts - Token management
+
+src/models/ (from your model.ts)
+tour.ts - interface Tour { id: string; name: string; price: number; }
+car.ts - interface Car { ... }
+user.ts - Auth user model.
+
+
+# ---- Dependencies ---- #
+
+# Navigation & UI
+npx expo install react-native-screens react-native-safe-area-context
+npm install @react-navigation/native @react-navigation/bottom-tabs
+npm install @react-navigation/stack
+
+# Maps & Location
+npx expo install expo-location
+npm install react-native-maps
+
+# Images & Icons
+npx expo install expo-image
+npm install react-native-vector-icons
+
+# Forms & Input
+npm install react-hook-form
+npm install yup
+
+# Data Fetching
+npm install axios
+npm install react-query
+
+# State Management
+npm install zustand
+
+# Date/Time
+npm install date-fns
+
+# Offline Support
+npx expo install @react-native-async-storage/async-storage
+
+/////////////////////// 
+
+npx expo install expo-router @react-navigation/native @react-navigation/bottom-tabs react-native-safe-area-context react-native-screens @tanstack/react-query-native react-native-paper @react-native-async-storage/async-storage expo install react-native-svg expo-location expo-image expo-router
+mkdir -p src/{components/common,screens/{home,tours,cars},services,hooks,models,utils}
+mv model.ts src/models/  # If TypeScript

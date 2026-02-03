@@ -1,0 +1,801 @@
+// app/(tabs)/index.tsx
+
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { Feather, FontAwesome5, MaterialIcons, FontAwesome6, Ionicons } from '@expo/vector-icons';
+import { useState, useEffect, useMemo } from 'react';
+import * as SecureStore from 'expo-secure-store';
+import { useServices } from '../context/hooks/useServices';
+import { useFavorites } from '../context/hooks/useFavorites';
+import { ServiceType } from '../context/types/services.types';
+
+type ExtendedServiceType = ServiceType | 'boat';
+
+const getColorByServiceType = (serviceType: ExtendedServiceType): string => {
+  const colorMap: Record<ExtendedServiceType, string> = {
+    hotel: '#FF6B6B',
+    car: '#4ECDC4',
+    space: '#45B7D1',
+    tour: '#96CEB4',
+    event: '#FFEAA7',
+    flight: '#DDA0DD',
+    boat: '#87CEEB',
+  };
+  return colorMap[serviceType] || '#1014d7';
+};
+
+const getServiceVectorIcon = (serviceType: ExtendedServiceType, color: string) => {
+  const iconSize = 28;
+  switch (serviceType) {
+    case 'hotel':
+      return <FontAwesome5 name="hotel" size={iconSize} color={color} />;
+    case 'car':
+      return <FontAwesome5 name="car" size={iconSize} color={color} />;
+    case 'space':
+      return <MaterialIcons name="apartment" size={iconSize} color={color} />;
+    case 'tour':
+      return <FontAwesome5 name="map-marked-alt" size={iconSize} color={color} />;
+    case 'event':
+      return <MaterialIcons name="event" size={iconSize} color={color} />;
+    case 'flight':
+      return <FontAwesome5 name="plane" size={iconSize} color={color} />;
+    case 'boat':
+      return <FontAwesome6 name="ship" size={iconSize} color={color} />;
+    default:
+      return <Feather name="star" size={iconSize} color={color} />;
+  }
+};
+
+// Default service categories if API doesn't provide
+const DEFAULT_SERVICE_CATEGORIES = [
+  { id: 1, type: 'hotel' as ExtendedServiceType, name: 'Hotels' },
+  { id: 2, type: 'car' as ExtendedServiceType, name: 'Car Rental' },
+  { id: 3, type: 'space' as ExtendedServiceType, name: 'Spaces' },
+  { id: 4, type: 'tour' as ExtendedServiceType, name: 'Tours' },
+  { id: 5, type: 'event' as ExtendedServiceType, name: 'Events' },
+  { id: 6, type: 'flight' as ExtendedServiceType, name: 'Flights' },
+  { id: 7, type: 'boat' as ExtendedServiceType, name: 'Boats' },
+];
+
+export default function HomeScreen() {
+  const router = useRouter();
+  const [userName, setUserName] = useState<string | null>(null);
+  const [greeting, setGreeting] = useState('Welcome');
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Use context hooks
+  const { services, loading: servicesLoading, error: servicesError, refreshServices } = useServices();
+  const { isFavorite, toggleFavorite } = useFavorites();
+
+  // Fetch user data from secure store
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const name = await SecureStore.getItemAsync('userName');
+        if (name) setUserName(name);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+    fetchUserData();
+  }, []);
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting('Good morning');
+    else if (hour < 18) setGreeting('Good afternoon');
+    else setGreeting('Good evening');
+  }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([refreshServices()]);
+    } catch (error) {
+      console.error('Error refreshing:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Process service categories from API data
+  const serviceCategories = useMemo(() => {
+    // Count services by type
+    const typeCounts: Record<string, number> = {};
+    if (services && services.length > 0) {
+      services.forEach((service) => {
+        const type = (service.type || 'other').toLowerCase();
+        if (type && type !== 'other') {
+          typeCounts[type] = (typeCounts[type] || 0) + 1;
+        }
+      });
+    }
+
+    // Always return all default categories with their counts
+    return DEFAULT_SERVICE_CATEGORIES.map((category) => ({
+      ...category,
+      count: typeCounts[category.type] || 0,
+    }));
+  }, [services]);
+
+  // Cars - filters by car type
+  const carServices = useMemo(() => {
+    if (!services) return [];
+    const cars = services.filter((service) => {
+      const type = (service.object_model || service.type || '').toLowerCase();
+      return type.includes('car') || type === 'car';
+    });
+    const shuffled = [...cars].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, Math.min(8, shuffled.length));
+  }, [services, refreshing]);
+
+  // Hotels - filters by hotel type
+  const hotelServices = useMemo(() => {
+    if (!services) return [];
+    const hotels = services.filter((service) => {
+      const type = (service.object_model || service.type || '').toLowerCase();
+      return type.includes('hotel') || type === 'hotel';
+    });
+    const shuffled = [...hotels].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, Math.min(8, shuffled.length));
+  }, [services, refreshing]);
+
+  // Tours & Spaces - filters by tour, space, or event types
+  const tourSpaceServices = useMemo(() => {
+    if (!services) return [];
+    const toursSpaces = services.filter((service) => {
+      const type = (service.object_model || service.type || '').toLowerCase();
+      return type.includes('tour') || type.includes('space') || type === 'tour' || type === 'space' || type.includes('event');
+    });
+    const shuffled = [...toursSpaces].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, Math.min(8, shuffled.length));
+  }, [services, refreshing]);
+
+  const getPriceDisplay = (service: any) => {
+    if (!service) return 'Contact for price';
+    if (service.sale_price && service.sale_price !== service.price) {
+      return `$${service.sale_price}`;
+    }
+    return service.price ? `$${service.price}` : 'Contact for price';
+  };
+
+  const getOriginalPrice = (service: any) => {
+    if (!service || !service.sale_price || service.sale_price === service.price) return null;
+    return `$${service.price}`;
+  };
+
+  const getLocationName = (service: any) => {
+    if (!service || !service.location) return 'Morocco';
+    if (typeof service.location === 'string') return service.location;
+    if (service.location.name) return service.location.name;
+    return 'Morocco';
+  };
+
+  const getReviewText = (service: any) => {
+    if (!service || !service.review_score) return null;
+    if (typeof service.review_score === 'string') return service.review_score;
+    if (service.review_score.review_text) return service.review_score.review_text;
+    return null;
+  };
+
+  const getReviewScore = (service: any) => {
+    if (!service || !service.review_score) return null;
+    if (typeof service.review_score === 'object' && service.review_score.score_total) {
+      return service.review_score.score_total;
+    }
+    return null;
+  };
+
+  const handleServicePress = (service: any) => {
+    if (!service) return;
+    router.push({
+      pathname: '/offers/[id]',
+      params: { id: service.id, serviceType: service.type },
+    });
+  };
+
+  const handleCategoryPress = (category: any) => {
+    router.push({
+      pathname: '/search/results',
+      params: { service: category.type, serviceName: category.name },
+    });
+  };
+
+  // Show loading state
+  if (servicesLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#1014d7" />
+        <Text style={styles.loadingText}>Loading services...</Text>
+      </View>
+    );
+  }
+
+  // Show error state
+  if (servicesError) {
+    return (
+      <View style={styles.errorContainer}>
+        <Feather name="wifi-off" size={64} color="#FF6B6B" />
+        <Text style={styles.errorTitle}>Connection Error</Text>
+        <Text style={styles.errorText}>Unable to load services. Please check your connection.</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
+          <Text style={styles.retryButtonText}>Try Again</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const hasServices = services && services.length > 0;
+
+  return (
+    <ScrollView
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+    >
+      {/* Special Offers Banner */}
+      <TouchableOpacity style={styles.specialOfferBanner} onPress={() => router.push('/offers')}>
+        <View style={styles.offerBadge}>
+          <Text style={styles.offerBadgeText}>HOT</Text>
+        </View>
+        <View style={styles.offerContent}>
+          <Text style={styles.specialOfferTitle}>Limited Time Offer!</Text>
+          <Text style={styles.specialOfferText}>
+            Get 20% off on all bookings this week. Use code MOROCCO20
+          </Text>
+        </View>
+        <Feather name="chevron-right" size={20} color="#FFFFFF" />
+      </TouchableOpacity>
+
+      {/* Header Section with Search */}
+      <View style={styles.headerContainer}>
+        <Image
+          source={{
+            uri: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+          }}
+          style={styles.headerBackgroundImage}
+          resizeMode="cover"
+        />
+        <View style={styles.headerContent}>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.title}>Visit Morocco Now</Text>
+            <Text style={styles.subtitle}>Your Gateway to Authentic Experiences</Text>
+          </View>
+
+          {/* Search Bar */}
+          <TouchableOpacity style={styles.searchBar} onPress={() => router.push('/search')}>
+            <Feather name="search" size={20} color="#666666" style={{ marginRight: 10 }} />
+            <Text style={styles.searchText}>Search hotels, tours, cars...</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Our Services Section */}
+      <View style={styles.servicesSection}>
+        <View style={styles.servicesHeader}>
+          <Text style={styles.servicesTitle}>Our Services</Text>
+          {hasServices && <Text style={styles.servicesCount}>{services.length} listings available</Text>}
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.servicesScroll}
+        >
+          {serviceCategories.map((category) => {
+            const color = getColorByServiceType(category.type);
+            return (
+              <TouchableOpacity
+                key={category.id}
+                style={[styles.servicePill, { backgroundColor: color }]}
+                onPress={() => handleCategoryPress(category)}
+              >
+                {getServiceVectorIcon(category.type, '#FFFFFF')}
+                <View style={styles.serviceLabelContainer}>
+                  <Text style={styles.serviceLabel}>{category.name}</Text>
+                  {category.count !== undefined && (
+                    <Text style={styles.serviceCount}>{category.count}</Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      {/* Welcome Card */}
+      <View style={styles.welcomeCard}>
+        <Text style={styles.welcomeTitle}>Discover Morocco!</Text>
+        <Text style={styles.welcomeText}>
+          From the Atlas Mountains to the Sahara Desert, experience the rich culture, delicious cuisine, and
+          warm hospitality of Morocco with our curated services.
+          {hasServices && ` Explore ${services.length} unique listings.`}
+        </Text>
+      </View>
+
+      {/* Cars Offers */}
+      <View style={styles.horizontalSection}>
+        <View style={styles.horizontalHeader}>
+          <Text style={styles.horizontalTitle}>Car Rental Offers</Text>
+          <TouchableOpacity onPress={() => router.push('/search/results?service=car')}>
+            <Text style={styles.horizontalSeeAll}>See All</Text>
+          </TouchableOpacity>
+        </View>
+
+        {carServices.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalScrollContent}
+          >
+            {carServices.map((service) => {
+              const color = getColorByServiceType(service.type as ExtendedServiceType);
+              const price = getPriceDisplay(service);
+              const originalPrice = getOriginalPrice(service);
+              const location = getLocationName(service);
+              const reviewText = getReviewText(service);
+              const reviewScore = getReviewScore(service);
+
+              return (
+                <TouchableOpacity
+                  key={service.id}
+                  style={styles.horizontalCard}
+                  onPress={() => handleServicePress(service)}
+                >
+                  {/* Service Image with Favorite Button */}
+                  <View >
+                    {service.image ? (
+                      <Image
+                        source={{ uri: service.image }}
+                        style={styles.horizontalImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={[styles.horizontalImagePlaceholder, { backgroundColor: `${color}20` }]}>
+                        {getServiceVectorIcon(service.type as ExtendedServiceType, color)}
+                      </View>
+                    )}
+
+                    {/* Discount Badge - Top Left */}
+                    {service.discount_percent && (
+                      <View style={styles.discountBadge}>
+                        <Text style={styles.discountText}>{service.discount_percent}% OFF</Text>
+                      </View>
+                    )}
+
+                    {/* Favorite Button - Top Right */}
+                    <TouchableOpacity
+                      style={styles.horizontalFavoriteButton}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(service.id, service.type as ExtendedServiceType);
+                      }}
+                    >
+                      <Feather
+                        name="heart"
+                        size={20}
+                        color={isFavorite(service.id) ? '#FF6B6B' : '#FFFFFF'}
+                        fill={isFavorite(service.id) ? '#FF6B6B' : 'transparent'}
+                      />
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.horizontalContent}>
+                    {/* Price */}
+                    <View style={styles.priceContainer}>
+                      <Text style={[styles.horizontalPrice, { color }]}>{price}</Text>
+                      {originalPrice && <Text style={styles.originalPrice}>{originalPrice}</Text>}
+                    </View>
+
+                    {/* Title */}
+                    <Text style={styles.horizontalTitleCard} numberOfLines={1}>
+                      {service.name || service.title}
+                    </Text>
+
+                    {/* Location */}
+                    <View style={styles.locationRow}>
+                      <Ionicons name="location" size={12} color="#666666" />
+                      <Text style={styles.horizontalLocation} numberOfLines={1}>
+                        {location}
+                      </Text>
+                    </View>
+
+                    {/* Rating */}
+                    {reviewText && (
+                      <View style={styles.ratingRow}>
+                        <Feather name="star" size={12} color="#FFB800" />
+                        <Text style={styles.ratingText}>
+                          {reviewScore ? `${reviewScore}/5` : reviewText}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        ) : (
+          <View style={styles.emptyState}>
+            <FontAwesome5 name="car" size={48} color="#CCCCCC" />
+            <Text style={styles.emptyStateText}>No car rentals available</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Hotels Offers */}
+      <View style={styles.horizontalSection}>
+        <View style={styles.horizontalHeader}>
+          <Text style={styles.horizontalTitle}>Hotel Offers</Text>
+          <TouchableOpacity onPress={() => router.push('/search/results?service=hotel')}>
+            <Text style={styles.horizontalSeeAll}>See All</Text>
+          </TouchableOpacity>
+        </View>
+
+        {hotelServices.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalScrollContent}
+          >
+            {hotelServices.map((service) => {
+              const color = getColorByServiceType(service.type as ExtendedServiceType);
+              const price = getPriceDisplay(service);
+              const originalPrice = getOriginalPrice(service);
+              const location = getLocationName(service);
+              const reviewText = getReviewText(service);
+              const reviewScore = getReviewScore(service);
+
+              return (
+                <TouchableOpacity
+                  key={service.id}
+                  style={styles.horizontalCard}
+                  onPress={() => handleServicePress(service)}
+                >
+                  {/* Service Image with Favorite Button */}
+                  <View >
+                    {service.image ? (
+                      <Image
+                        source={{ uri: service.image }}
+                        style={styles.horizontalImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={[styles.horizontalImagePlaceholder, { backgroundColor: `${color}20` }]}>
+                        {getServiceVectorIcon(service.type as ExtendedServiceType, color)}
+                      </View>
+                    )}
+
+                    {/* Discount Badge - Top Left */}
+                    {service.discount_percent && (
+                      <View style={styles.discountBadge}>
+                        <Text style={styles.discountText}>{service.discount_percent}% OFF</Text>
+                      </View>
+                    )}
+
+                    {/* Favorite Button - Top Right */}
+                    <TouchableOpacity
+                      style={styles.horizontalFavoriteButton}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(service.id, service.type as ExtendedServiceType);
+                      }}
+                    >
+                      <Feather
+                        name="heart"
+                        size={20}
+                        color={isFavorite(service.id) ? '#FF6B6B' : '#FFFFFF'}
+                        fill={isFavorite(service.id) ? '#FF6B6B' : 'transparent'}
+                      />
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.horizontalContent}>
+                    {/* Price */}
+                    <View style={styles.priceContainer}>
+                      <Text style={[styles.horizontalPrice, { color }]}>{price}</Text>
+                      {originalPrice && <Text style={styles.originalPrice}>{originalPrice}</Text>}
+                    </View>
+
+                    {/* Title */}
+                    <Text style={styles.horizontalTitleCard} numberOfLines={1}>
+                      {service.name || service.title}
+                    </Text>
+
+                    {/* Location */}
+                    <View style={styles.locationRow}>
+                      <Ionicons name="location" size={12} color="#666666" />
+                      <Text style={styles.horizontalLocation} numberOfLines={1}>
+                        {location}
+                      </Text>
+                    </View>
+
+                    {/* Rating */}
+                    {reviewText && (
+                      <View style={styles.ratingRow}>
+                        <Feather name="star" size={12} color="#FFB800" />
+                        <Text style={styles.ratingText}>
+                          {reviewScore ? `${reviewScore}/5` : reviewText}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        ) : (
+          <View style={styles.emptyState}>
+            <FontAwesome5 name="hotel" size={48} color="#CCCCCC" />
+            <Text style={styles.emptyStateText}>No hotels available</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Tours and Spaces */}
+      <View style={styles.propertiesSection}>
+        <View style={styles.horizontalHeader}>
+          <Text style={styles.sectionTitle}>Tours & Spaces</Text>
+          <TouchableOpacity style={styles.seeAllButton} onPress={() => router.push('/search/results?service=tour')}>
+            <Text style={styles.horizontalSeeAll}>See all</Text>
+            <Feather name="chevron-right" size={16} color="#1014d7" />
+          </TouchableOpacity>
+        </View>
+
+        {tourSpaceServices.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.propertiesScrollContent}
+          >
+            {tourSpaceServices.map((service) => {
+              const serviceType = service.type as ExtendedServiceType;
+              const color = getColorByServiceType(serviceType);
+              const price = getPriceDisplay(service);
+              const originalPrice = getOriginalPrice(service);
+              const location = getLocationName(service);
+              const reviewText = getReviewText(service);
+              const reviewScore = getReviewScore(service);
+              const safeReviewScore = reviewScore ? parseFloat(reviewScore.toString()) : null;
+
+              return (
+                <TouchableOpacity
+                  key={service.id}
+                  style={styles.weekendCard}
+                  onPress={() => handleServicePress(service)}
+                  activeOpacity={0.9}
+                >
+                  {/* Property Image */}
+                  <View style={styles.weekendImageContainer}>
+                    {service.image ? (
+                      <Image
+                        source={{ uri: service.image }}
+                        style={styles.weekendImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={[styles.weekendImagePlaceholder, { backgroundColor: `${color}20` }]}>
+                        {getServiceVectorIcon(serviceType, color)}
+                      </View>
+                    )}
+
+                    {/* Rating Badge - Top Left */}
+                    {safeReviewScore && (
+                      <View style={styles.weekendRatingBadge}>
+                        <Feather name="star" size={12} color="#FFB800" />
+                        <Text style={styles.weekendRatingText}>{safeReviewScore.toFixed(1)}</Text>
+                      </View>
+                    )}
+
+                    {/* Favorite Heart - Top Right */}
+                    <TouchableOpacity
+                      style={styles.weekendFavoriteButton}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(service.id, serviceType);
+                      }}
+                    >
+                      <Feather
+                        name="heart"
+                        size={20}
+                        color={isFavorite(service.id) ? '#FF6B6B' : '#FFFFFF'}
+                        fill={isFavorite(service.id) ? '#FF6B6B' : 'transparent'}
+                      />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Card Content */}
+                  <View style={styles.weekendCardContent}>
+                    {/* Property Title */}
+                    <Text style={styles.weekendPropertyTitle} numberOfLines={2}>
+                      {service.title}
+                    </Text>
+
+                    {/* Location */}
+                    <View style={styles.weekendLocationRow}>
+                      <Ionicons name="location" size={14} color="#666666" />
+                      <Text style={styles.weekendLocationText} numberOfLines={1}>
+                        {location}
+                      </Text>
+                    </View>
+
+                    {/* Price Section */}
+                    <View style={styles.weekendPriceSection}>
+                      <View style={styles.weekendPriceRow}>
+                        {originalPrice && <Text style={styles.weekendOriginalPrice}>{originalPrice}</Text>}
+                        <Text style={[styles.weekendPrice, originalPrice && { color: '#FF6B6B' }]}>
+                          {price}
+                        </Text>
+                        <Text style={styles.weekendPricePeriod}>{service.price_period || '/night'}</Text>
+                      </View>
+                      <Text style={styles.weekendTotalPrice}>{price} total</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        ) : (
+          <View style={styles.emptyState}>
+            <Feather name="map" size={48} color="#CCCCCC" />
+            <Text style={styles.emptyStateTitle}>No Tours/Spaces Available</Text>
+            <Text style={styles.emptyStateText}>
+              {servicesLoading ? 'Loading tours and spaces...' : 'Check back soon for tours and spaces'}
+            </Text>
+          </View>
+        )}
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+
+  // discount and favorite 
+  discountBadge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,  
+    backgroundColor: '#FF6B6B',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  horizontalFavoriteButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,  // Keep on the right
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',  // Semi-transparent background
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  weekendFavoriteButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+
+
+  container: { flex: 1, backgroundColor: '#FAFAFA', },
+  propertiesScrollContent: { paddingHorizontal: 4, paddingRight: 20, gap: 12, paddingBottom: 20 },
+  weekendCard: { width: 280, backgroundColor: '#FFFFFF', borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E5E5', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 6, marginRight: 12 },
+  sectionTitle: { fontSize: 20, fontWeight: 'bold', color: '#1A1A1A' },
+  seeAllButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  weekendImageContainer: { width: '100%', height: 200, position: 'relative' },
+  weekendImage: { width: '100%', height: '100%' },
+  weekendImagePlaceholder: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
+  weekendRatingBadge: { position: 'absolute', top: 12, left: 12, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFFFFF', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 3 },
+  weekendRatingText: { fontSize: 13, fontWeight: '700', color: '#1A1A1A' },
+  // weekendFavoriteButton: { position: 'absolute', top: 12, right: 12, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgb(243, 55, 55)', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4,  },
+  weekendCardContent: { padding: 16, gap: 8, paddingBottom: 20 },
+  weekendPropertyTitle: { fontSize: 16, fontWeight: '700', color: '#1A1A1A', lineHeight: 22 },
+  weekendLocationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  weekendLocationText: { fontSize: 13, color: '#666666', flex: 1 },
+  weekendPriceSection: { marginTop: 8, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#F0F0F0' },
+  weekendPriceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' },
+  weekendOriginalPrice: { fontSize: 13, color: '#999999', textDecorationLine: 'line-through' },
+  weekendPrice: { fontSize: 20, fontWeight: '700', color: '#1A1A1A' },
+  weekendPricePeriod: { fontSize: 13, color: '#666666' },
+  weekendTotalPrice: { fontSize: 12, color: '#666666', marginTop: 4 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FAFAFA' },
+  loadingText: { marginTop: 12, fontSize: 14, color: '#666666' },
+  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FAFAFA', padding: 20 },
+  errorTitle: { fontSize: 20, fontWeight: 'bold', color: '#1A1A1A', marginTop: 16, marginBottom: 8 },
+  errorText: { fontSize: 14, color: '#666666', textAlign: 'center', marginBottom: 20 },
+  retryButton: { backgroundColor: '#1014d7', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 },
+  retryButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+  userGreeting: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  greetingText: { fontSize: 18, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 4 },
+  greetingSubtext: { fontSize: 14, color: '#666666' },
+  loginButton: { backgroundColor: '#1014d7', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
+  loginButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+  specialOfferBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1014d7', marginHorizontal: 16, marginVertical: 16, padding: 16, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: '#FFD700', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
+  offerBadge: { backgroundColor: '#FF6B6B', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4, marginRight: 12 },
+  offerBadgeText: { color: '#FFFFFF', fontSize: 10, fontWeight: 'bold' },
+  offerContent: { flex: 1 },
+  specialOfferTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
+  specialOfferText: { color: '#FFFFFF', fontSize: 12, opacity: 0.9 },
+  headerContainer: { marginHorizontal: 18, marginTop: 0, marginBottom: 20, borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E5E5', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 8, borderLeftWidth: 4, borderLeftColor: '#1014d7', position: 'relative', minHeight: 220 },
+  headerBackgroundImage: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
+  headerContent: { position: 'relative', zIndex: 1, padding: 20, backgroundColor: 'transparent' },
+  headerTextContainer: { marginBottom: 20 },
+  title: { fontSize: 28, fontWeight: 'bold', color: '#FFFFFF', marginBottom: 8 },
+  subtitle: { fontSize: 14, color: '#FFFFFF', fontWeight: 'bold' },
+  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: '#E5E5E5', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 3 },
+  searchText: { fontSize: 16, color: '#666666', flex: 1 },
+  servicesSection: { paddingHorizontal: 20, marginBottom: 24 },
+  servicesHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 },
+  servicesTitle: { fontSize: 20, fontWeight: 'bold', color: '#1A1A1A' },
+  servicesCount: { fontSize: 12, color: '#666666' },
+  servicesScroll: { paddingHorizontal: 4, gap: 12, paddingBottom: 10 },
+  servicePill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 25, minWidth: 140, shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
+  serviceLabelContainer: { marginLeft: 8 },
+  serviceLabel: { fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
+  serviceCount: { fontSize: 10, color: '#FFFFFF', opacity: 0.8, marginTop: 2 },
+  welcomeCard: { backgroundColor: '#E8F5F0', marginHorizontal: 20, marginBottom: 40, padding: 20, borderRadius: 16, borderLeftWidth: 4, borderLeftColor: '#0026ff' },
+  welcomeTitle: { fontSize: 18, fontWeight: 'bold', color: '#0026ff', marginBottom: 8 },
+  welcomeText: { fontSize: 14, color: '#333333', lineHeight: 20 },
+  horizontalSection: { paddingHorizontal: 20, marginBottom: 32 },
+  horizontalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  horizontalTitle: { fontSize: 20, fontWeight: 'bold', color: '#1A1A1A' },
+  horizontalSeeAll: { fontSize: 14, color: '#0026ff', fontWeight: '600' },
+  horizontalScrollContent: { paddingHorizontal: 4, gap: 12, paddingBottom: 10 },
+  horizontalCard: { width: 220, backgroundColor: '#FFFFFF', borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E5E5', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, position: 'relative' },
+  horizontalImage: { width: '100%', height: 140, backgroundColor: '#E0E0E0' },
+  horizontalImagePlaceholder: { width: '100%', height: 140, justifyContent: 'center', alignItems: 'center' },
+  // discountBadge: { position: 'absolute', top: 10, right: 10, backgroundColor: '#FF6B6B', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
+  discountText: { color: '#FFFFFF', fontSize: 10, fontWeight: 'bold' },
+  horizontalContent: { padding: 12, gap: 6 },
+  priceContainer: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  horizontalPrice: { fontSize: 16, fontWeight: 'bold' },
+  originalPrice: { fontSize: 12, color: '#999999', textDecorationLine: 'line-through' },
+  horizontalTitleCard: { fontSize: 14, fontWeight: '600', color: '#1A1A1A' },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  horizontalLocation: { fontSize: 12, color: '#666666', flex: 1 },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  ratingText: { fontSize: 11, color: '#666666' },
+  propertiesSection: { marginHorizontal: 20, marginBottom: 130 },
+  propertiesHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  propertiesTitle: { fontSize: 20, fontWeight: 'bold', color: '#1A1A1A' },
+  propertiesSeeAll: { fontSize: 14, color: '#0026ff', fontWeight: '600' },
+  propertiesList: { gap: 16 },
+  propertyCard: { backgroundColor: '#FFFFFF', borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E5E5', flexDirection: 'row', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  propertyImage: { width: 100, height: 100, backgroundColor: '#E0E0E0' },
+  propertyImagePlaceholder: { width: 100, height: 100, justifyContent: 'center', alignItems: 'center' },
+  propertyContent: { flex: 1, padding: 12, gap: 8 },
+  propertyTitle: { fontSize: 16, fontWeight: 'bold' },
+  propertyAddress: { fontSize: 13, color: '#666666', flex: 1 },
+  propertyPriceRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  propertyPrice: { fontSize: 16, fontWeight: 'bold' },
+  propertyOriginalPrice: { fontSize: 12, color: '#999999', textDecorationLine: 'line-through' },
+  agentRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTopWidth: 1, borderTopColor: '#F0F0F0' },
+  agentLabel: { fontSize: 12, color: '#666666' },
+  agentName: { fontSize: 13, fontWeight: '600', color: '#1A1A1A', flex: 1, textAlign: 'right' },
+  emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40, backgroundColor: '#F8F9FA', borderRadius: 12, borderWidth: 1, borderColor: '#E9ECEF', borderStyle: 'dashed' },
+  emptyStateText: { marginTop: 12, fontSize: 14, color: '#6C757D', textAlign: 'center' },
+});

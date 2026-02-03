@@ -1,0 +1,474 @@
+BASE_URL = https://visitmorocconow.net/api
+TOKEN = <paste access_token from /auth/login response>
+
+/* ===========================
+   AUTHENTICATION
+   =========================== */
+
+/* 1) Register */
+[REGISTER]
+Method: POST
+URL: {{BASE_URL}}/auth/register
+Headers:
+  Content-Type: application/json
+Body (raw JSON):
+{
+  "name": "Test User",
+  "email": "test@example.com",
+  "password": "password123",
+  "password_confirmation": "password123"
+}
+Expected:
+  - 201 or 200
+  - JSON with user data and/or token
+
+/* 2) Login */
+[LOGIN]
+Method: POST
+URL: {{BASE_URL}}/auth/login
+Headers:
+  Content-Type: application/json
+Body (raw JSON):
+{
+  "email": "test@example.com",
+  "password": "password123",
+  "device_name": "postman_test"
+}
+Expected:
+  - 200
+  - JSON with "access_token"
+Action:
+  - Copy "access_token" → TOKEN
+
+/* 3) Logout */
+[LOGOUT]
+Method: POST
+URL: {{BASE_URL}}/auth/logout
+Headers:
+  Authorization: Bearer {{TOKEN}}
+Expected:
+  - 200
+  - Logged out confirmation
+
+/* 4) Refresh Token */
+[REFRESH TOKEN]
+Method: POST
+URL: {{BASE_URL}}/auth/refresh
+Headers:
+  Authorization: Bearer {{TOKEN}}
+Expected:
+  - 200
+  - New token (if implemented)
+
+/* 5) Get Profile */
+[GET PROFILE]
+Method: GET
+URL: {{BASE_URL}}/auth/me
+Headers:
+  Authorization: Bearer {{TOKEN}}
+Expected:
+  - 200
+  - Current user data
+
+/* 6) Update Profile */
+[UPDATE PROFILE]
+Method: POST
+URL: {{BASE_URL}}/auth/me
+Headers:
+  Authorization: Bearer {{TOKEN}}
+  Content-Type: application/json
+Body (raw JSON):
+{
+  "name": "Updated User Name"
+}
+Expected:
+  - 200
+  - Updated user data
+
+/* 7) Change Password */
+[CHANGE PASSWORD]
+Method: POST
+URL: {{BASE_URL}}/auth/change-password
+Headers:
+  Authorization: Bearer {{TOKEN}}
+  Content-Type: application/json
+Body (raw JSON):
+{
+  "current_password": "password123",
+  "new_password": "newpassword123",
+  "new_password_confirmation": "newpassword123"
+}
+Expected:
+  - 200
+  - Password change success message
+
+
+/* ===========================
+   CONFIG & LAYOUT
+   =========================== */
+
+/* 8) Get Configs */
+[GET CONFIGS]
+Method: GET
+URL: {{BASE_URL}}/configs
+Expected:
+  - 200
+  - Global configuration data
+
+/* 9) Get Home Layout */
+[GET HOME PAGE]
+Method: GET
+URL: {{BASE_URL}}/home-page
+Expected:
+  - 200
+  - Home layout sections data
+
+
+/* ===========================
+   SERVICES (HOTEL / TOUR / BOAT / CAR / FLIGHT / SPACE / EVENT)
+   =========================== */
+
+/* 10) Search all services */
+[SEARCH ALL SERVICES]
+Method: GET
+URL: {{BASE_URL}}/services
+Query Params (example):
+  q = morocco
+  page = 1
+Expected:
+  - 200
+  - List of mixed services
+
+/* 11) Search by type (example: hotel) */
+[SEARCH HOTELS]
+Method: GET
+URL: {{BASE_URL}}/hotel/search
+Query Params (example):
+  location = Casablanca
+  check_in = 2026-02-01
+  check_out = 2026-02-05
+  adults = 2
+Expected:
+  - 200
+  - List of hotels
+
+/* 12) Get service detail */
+[HOTEL DETAIL]
+Method: GET
+URL: {{BASE_URL}}/hotel/detail/1
+Expected:
+  - 200
+  - Hotel detail data
+
+/* 13) Check availability (generic) */
+[CHECK HOTEL AVAILABILITY]
+Method: GET
+URL: {{BASE_URL}}/hotel/availability/1
+Query Params (example):
+  start_date = 2026-02-01
+  end_date = 2026-02-05
+  adults = 2
+Expected:
+  - 200
+  - Availability info
+
+/* 14) Get filters by type */
+[HOTEL FILTERS]
+Method: GET
+URL: {{BASE_URL}}/hotel/filters
+Expected:
+  - 200
+  - Filter options
+
+/* 15) Get form-search schema by type */
+[HOTEL FORM SEARCH]
+Method: GET
+URL: {{BASE_URL}}/hotel/form-search
+Expected:
+  - 200
+  - Form fields config
+
+/* 16) Check boat availability (special) */
+[BOAT AVAILABILITY BOOKING]
+Method: GET
+URL: {{BASE_URL}}/boat/availability-booking/1
+Query Params (example):
+  start_date = 2026-02-01
+  end_date = 2026-02-01
+  guests = 4
+Expected:
+  - 200
+  - Availability info
+
+
+/* ===========================
+   LOCATIONS
+   =========================== */
+
+/* 17) Search locations */
+[SEARCH LOCATIONS]
+Method: GET
+URL: {{BASE_URL}}/locations
+Query Params (example):
+  search = Marrakech
+Expected:
+  - 200
+  - List of locations
+
+/* 18) Location detail */
+[LOCATION DETAIL]
+Method: GET
+URL: {{BASE_URL}}/location/1
+Expected:
+  - 200
+  - Location detail
+
+
+/* ===========================
+   NEWS
+   =========================== */
+
+/* 19) Search news */
+[SEARCH NEWS]
+Method: GET
+URL: {{BASE_URL}}/news
+Query Params (example):
+  category_id = 1
+  page = 1
+Expected:
+  - 200
+  - List of news
+
+/* 20) Get news categories */
+[NEWS CATEGORIES]
+Method: GET
+URL: {{BASE_URL}}/news/category
+Expected:
+  - 200
+  - List of categories
+
+/* 21) News detail */
+[NEWS DETAIL]
+Method: GET
+URL: {{BASE_URL}}/news/1
+Expected:
+  - 200
+  - News detail
+
+
+/* ===========================
+   USER (BOOKING HISTORY, WISHLIST, DELETE)
+   =========================== */
+
+/* 22) Booking history */
+[BOOKING HISTORY]
+Method: GET
+URL: {{BASE_URL}}/user/booking-history
+Headers:
+  Authorization: Bearer {{TOKEN}}
+Query Params (optional example):
+  page = 1
+Expected:
+  - 200
+  - List of user bookings
+
+/* 23) Toggle wishlist item */
+[HANDLE WISHLIST]
+Method: POST
+URL: {{BASE_URL}}/user/wishlist
+Headers:
+  Authorization: Bearer {{TOKEN}}
+  Content-Type: application/json
+Body (raw JSON example):
+{
+  "service_id": 1,
+  "service_type": "hotel"
+}
+Expected:
+  - 200
+  - Wishlist updated status
+
+/* 24) Get wishlist */
+[GET WISHLIST]
+Method: GET
+URL: {{BASE_URL}}/user/wishlist
+Headers:
+  Authorization: Bearer {{TOKEN}}
+Expected:
+  - 200
+  - List of wishlisted items
+
+/* 25) Permanently delete user */
+[PERMANENTLY DELETE ACCOUNT]
+Method: POST
+URL: {{BASE_URL}}/user/permanently_delete
+Headers:
+  Authorization: Bearer {{TOKEN}}
+  Content-Type: application/json
+Body (raw JSON example):
+{
+  "password": "current_password_here"
+}
+Expected:
+  - 200
+  - Account deletion confirmation
+
+
+/* ===========================
+   BOOKING
+   =========================== */
+
+/* 26) Add to cart */
+[ADD TO CART]
+Method: POST
+URL: {{BASE_URL}}/booking/addToCart
+Headers:
+  Authorization: Bearer {{TOKEN}}
+  Content-Type: application/json
+Body (raw JSON example):
+{
+  "service_id": 1,
+  "service_type": "hotel",
+  "start_date": "2026-02-01",
+  "end_date": "2026-02-05",
+  "guests": 2
+}
+Expected:
+  - 200
+  - Cart item data
+
+/* 27) Add enquiry */
+[ADD ENQUIRY]
+Method: POST
+URL: {{BASE_URL}}/booking/addEnquiry
+Headers:
+  Authorization: Bearer {{TOKEN}}
+  Content-Type: application/json
+Body (example):
+{
+  "service_id": 1,
+  "service_type": "tour",
+  "message": "I would like more information about this tour."
+}
+Expected:
+  - 200
+  - Enquiry confirmation
+
+/* 28) Do checkout */
+[DO CHECKOUT]
+Method: POST
+URL: {{BASE_URL}}/booking/doCheckout
+Headers:
+  Authorization: Bearer {{TOKEN}}
+  Content-Type: application/json
+Body (example – depends on backend):
+{
+  "payment_gateway": "stripe",
+  "billing_address": "Sample address",
+  "cart_code": "XXXXXX"
+}
+Expected:
+  - 200
+  - Payment/redirect data
+
+/* 29) Booking detail by code */
+[BOOKING DETAIL]
+Method: GET
+URL: {{BASE_URL}}/booking/{{code}}
+Headers:
+  Authorization: Bearer {{TOKEN}}
+Expected:
+  - 200
+  - Booking details
+
+/* 30) Get checkout data */
+[GET CHECKOUT]
+Method: GET
+URL: {{BASE_URL}}/booking/{{code}}/checkout
+Headers:
+  Authorization: Bearer {{TOKEN}}
+Expected:
+  - 200
+  - Checkout information
+
+/* 31) Check booking status */
+[CHECK STATUS]
+Method: GET
+URL: {{BASE_URL}}/booking/{{code}}/check-status
+Headers:
+  Authorization: Bearer {{TOKEN}}
+Expected:
+  - 200
+  - Status info
+
+/* 32) Confirm payment callback */
+[CONFIRM PAYMENT]
+Method: GET
+URL: {{BASE_URL}}/booking/confirm/{{gateway}}
+Expected:
+  - 200
+  - Confirmation page/data
+
+/* 33) Cancel payment callback */
+[CANCEL PAYMENT]
+Method: GET
+URL: {{BASE_URL}}/booking/cancel/{{gateway}}
+Expected:
+  - 200
+  - Cancel page/data
+
+/* 34) Thank you page */
+[THANKYOU]
+Method: GET
+URL: {{BASE_URL}}/booking/{{code}}/thankyou
+Expected:
+  - 200
+  - Thank you data/page
+
+/* 35) Get payment gateways */
+[GET GATEWAYS]
+Method: GET
+URL: {{BASE_URL}}/gateways
+Expected:
+  - 200
+  - List of gateways
+
+
+/* ===========================
+   REVIEWS
+   =========================== */
+
+/* 36) Write review (example: hotel) */
+[WRITE HOTEL REVIEW]
+Method: POST
+URL: {{BASE_URL}}/hotel/write-review/1
+Headers:
+  Authorization: Bearer {{TOKEN}}
+  Content-Type: application/json
+Body (example):
+{
+  "rating": 5,
+  "title": "Great hotel!",
+  "content": "Amazing experience, highly recommended."
+}
+Expected:
+  - 200
+  - Review saved data
+
+
+/* ===========================
+   MEDIA UPLOAD
+   =========================== */
+
+/* 37) Upload image */
+[UPLOAD IMAGE]
+Method: POST
+URL: {{BASE_URL}}/media/store
+Headers:
+  Authorization: Bearer {{TOKEN}}
+  Content-Type: multipart/form-data
+Body (form-data):
+  file: <select image file from disk>
+Expected:
+  - 200
+  - Uploaded file info / URL
